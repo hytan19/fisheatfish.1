@@ -17,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoginMenu {
+
     public void show(Stage stage) {
         VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(20));
@@ -30,12 +31,15 @@ public class LoginMenu {
         Button loginButton = new Button("Login");
         loginButton.setOnAction(e -> login(stage, usernameField.getText(), passwordField.getText()));
 
-        Button backToMenuButton = new Button("Back to Menu");
-        backToMenuButton.setOnAction(e -> backToMenu(stage));
+        Button signUpButton = new Button("Sign Up");
+        signUpButton.setOnAction(e -> showSignUpMenu(stage));  // Show the sign-up form
 
-        vbox.getChildren().addAll(usernameField, passwordField, loginButton, backToMenuButton);
+        Button exitGameButton = new Button("Exit Game");
+        exitGameButton.setOnAction(e -> System.exit(0));  // Exit the application
 
-        Scene scene = new Scene(vbox, 300, 200);
+        vbox.getChildren().addAll(usernameField, passwordField, loginButton, signUpButton, exitGameButton);
+
+        Scene scene = new Scene(vbox, 300, 250);  // Increase size to fit all buttons
         stage.setScene(scene);
         stage.setTitle("Login");
         stage.show();
@@ -52,12 +56,13 @@ public class LoginMenu {
                 String query = "SELECT * FROM users WHERE username = ? AND password = ?";
                 try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
                     preparedStatement.setString(1, username);
-                    preparedStatement.setString(2, password); // Password should be hashed and compared securely
+                    preparedStatement.setString(2, password);
 
                     ResultSet resultSet = preparedStatement.executeQuery();
                     if (resultSet.next()) {
+                        MainMenu.loginSuccessful();  // Mark user as logged in
                         showAlert(stage, "Success", "Login Successful", AlertType.INFORMATION);
-                        backToMenu(stage);
+                        showMainMenu(stage);  // Show the main menu after successful login
                     } else {
                         showAlert(stage, "Error", "Invalid username or password", AlertType.ERROR);
                     }
@@ -72,8 +77,13 @@ public class LoginMenu {
         }
     }
 
-    private void backToMenu(Stage stage) {
-        new MainMenu().show(stage);
+    private void showMainMenu(Stage stage) {
+        // This method shows the MainMenu after a successful login
+        new MainMenu().show(stage);  // Show the main menu screen
+    }
+
+    private void showSignUpMenu(Stage stage) {
+        new SignUpMenu().show(stage); // Show the Sign Up menu
     }
 
     private void showAlert(Stage stage, String title, String message, AlertType type) {
@@ -83,6 +93,17 @@ public class LoginMenu {
         alert.showAndWait();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

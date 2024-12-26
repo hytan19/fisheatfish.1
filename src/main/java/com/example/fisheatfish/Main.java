@@ -1,6 +1,8 @@
 package com.example.fisheatfish;
 
 import com.example.fisheatfish.menus.MainMenu;
+import com.example.fisheatfish.menus.LoginMenu;
+import com.example.fisheatfish.menus.SignUpMenu;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -12,18 +14,17 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // Create the main menu instance
-        MainMenu mainMenu = new MainMenu();
+        // Show the Login Menu first
+        LoginMenu loginMenu = new LoginMenu();
+        loginMenu.show(primaryStage);
 
-        // Show the main menu with the given stage
-        mainMenu.show(primaryStage);
-
-        // Optionally, configure additional properties for the stage
-        // Example: Set the title and size of the window
+        // Set stage properties
         primaryStage.setTitle("Fish Eat Fish");
         primaryStage.setWidth(800);  // Set the width of the window
         primaryStage.setHeight(600); // Set the height of the window
-        primaryStage.show(); // Display the stage
+        primaryStage.show();
     }
 }
+
+
 

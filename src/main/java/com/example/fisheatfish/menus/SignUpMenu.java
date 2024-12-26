@@ -8,15 +8,16 @@ import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-
 import javafx.stage.Stage;
 import com.example.fisheatfish.utils.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class SignUpMenu {
+
     public void show(Stage stage) {
         VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(20));
@@ -36,10 +37,10 @@ public class SignUpMenu {
         Button signUpButton = new Button("Sign Up");
         signUpButton.setOnAction(e -> signUp(stage, usernameField.getText(), nameField.getText(), passwordField.getText(), confirmPasswordField.getText()));
 
-        Button backToMenuButton = new Button("Back to Menu");
-        backToMenuButton.setOnAction(e -> backToMenu(stage));
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> backToLoginMenu(stage));  // Go back to login screen
 
-        vbox.getChildren().addAll(usernameField, nameField, passwordField, confirmPasswordField, signUpButton, backToMenuButton);
+        vbox.getChildren().addAll(usernameField, nameField, passwordField, confirmPasswordField, signUpButton, backButton);
 
         Scene scene = new Scene(vbox, 300, 250);
         stage.setScene(scene);
@@ -58,21 +59,27 @@ public class SignUpMenu {
             return;
         }
 
+        // Check if username is already taken
+        if (isUsernameTaken(username)) {
+            showAlert(stage, "Error", "Username is already taken. Please choose a different username.", AlertType.ERROR);
+            return;
+        }
+
         try (Connection connection = DatabaseConnection.getConnection()) {
             if (connection != null) {
                 String query = "INSERT INTO users (username, name, password) VALUES (?, ?, ?)";
                 try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
                     preparedStatement.setString(1, username);
                     preparedStatement.setString(2, name);
-                    preparedStatement.setString(3, password); // Password should be hashed in real scenarios
+                    preparedStatement.setString(3, password);  // Store the password securely (e.g., hashing in a real app)
                     int rowsAffected = preparedStatement.executeUpdate();
 
                     if (rowsAffected > 0) {
                         showAlert(stage, "Success", "Sign Up Successful", AlertType.INFORMATION);
+                        backToLoginMenu(stage);  // Redirect to login after successful sign-up
                     } else {
                         showAlert(stage, "Error", "Sign Up Failed", AlertType.ERROR);
                     }
-                    backToMenu(stage);
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                     showAlert(stage, "Error", "Sign Up Failed", AlertType.ERROR);
@@ -84,8 +91,26 @@ public class SignUpMenu {
         }
     }
 
-    private void backToMenu(Stage stage) {
-        new MainMenu().show(stage);
+    // Check if the username already exists in the database
+    private boolean isUsernameTaken(String username) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            if (connection != null) {
+                String query = "SELECT * FROM users WHERE username = ?";
+                try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                    preparedStatement.setString(1, username);
+
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    return resultSet.next();  // If a result is returned, the username exists
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return false;  // Return false if no username is found
+    }
+
+    private void backToLoginMenu(Stage stage) {
+        new LoginMenu().show(stage);  // Go back to login after sign-up
     }
 
     private void showAlert(Stage stage, String title, String message, AlertType type) {
@@ -95,6 +120,11 @@ public class SignUpMenu {
         alert.showAndWait();
     }
 }
+
+
+
+
+
 
 
 
