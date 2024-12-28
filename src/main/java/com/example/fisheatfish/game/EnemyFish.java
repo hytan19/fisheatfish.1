@@ -1,66 +1,56 @@
 package com.example.fisheatfish.game;
 
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+public class EnemyFish extends Fish {
 
-public class EnemyFish extends Circle {
+    private boolean movingLeft;  // New property to track movement direction
 
-    private double speed;
-
-    public enum FishType {
-        SMALL, MEDIUM, LARGE, GIANT
-    }
-
+    // Constructor that sets properties based on fish type
     public EnemyFish(FishType type) {
-        super(getRadiusByType(type), getColorByType(type));
-        this.speed = getSpeedByType(type);
+        super(type);  // Call the Fish constructor to set speed, radius, and color
+        this.movingLeft = false;  // Default direction is moving to the right
     }
 
-    public double getSpeed() {
-        return speed;
+    // Getter and setter for movingLeft
+    public boolean isMovingLeft() {
+        return movingLeft;
     }
 
-    // Get radius based on fish type
-    private static double getRadiusByType(FishType type) {
-        return switch (type) {
-            case SMALL -> 10;
-            case MEDIUM -> 20;
-            case LARGE -> 30;
-            case GIANT -> 40;
-        };
+    public void setMovingLeft(boolean movingLeft) {
+        this.movingLeft = movingLeft;
     }
 
-    // Get color based on fish type
-    private static Color getColorByType(FishType type) {
-        return switch (type) {
-            case SMALL -> Color.GREEN;
-            case MEDIUM -> Color.YELLOW;
-            case LARGE -> Color.ORANGE;
-            case GIANT -> Color.RED;
-        };
-    }
+    // Override the move method to implement movement behavior
+    @Override
+    public void move(double padding) {
+        double newX = getTranslateX();
 
-    // Get speed based on fish type
-    private static double getSpeedByType(FishType type) {
-        return switch (type) {
-            case SMALL -> 1.5;
-            case MEDIUM -> 2.5;
-            case LARGE -> 3.5;
-            case GIANT -> 4.5;
-        };
-    }
-
-    // Ensure the fish stays within game boundaries when moving
-    public void move() {
-        double newX = getTranslateX() - speed;
-        if (newX < 0) {
-            setTranslateX(600); // Respawn at the right side of the screen
-            setTranslateY(Math.random() * 400); // Random Y position within the screen
+        // Moving left or right based on the state of movingLeft
+        if (movingLeft) {
+            newX += speed;  // Move to the left
         } else {
-            setTranslateX(newX);
+            newX -= speed;  // Move to the right
+        }
+
+        // Check if the fish has moved off the screen (wrap around logic)
+        if (newX < padding) {
+            setTranslateX(GAME_WIDTH - padding);  // Respawn at the right side of the screen
+            setTranslateY(Math.random() * (GAME_HEIGHT - 2 * padding) + padding);  // Random Y position
+        } else if (newX > GAME_WIDTH - padding) {
+            setTranslateX(padding);  // Respawn at the left side of the screen
+            setTranslateY(Math.random() * (GAME_HEIGHT - 2 * padding) + padding);  // Random Y position
+        } else {
+            setTranslateX(newX);  // Update the X position
         }
     }
 }
+
+
+
+
+
+
+
+
 
 
 

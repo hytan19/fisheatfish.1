@@ -1,10 +1,8 @@
 package com.example.fisheatfish;
 
-import com.example.fisheatfish.menus.MainMenu;
+
 import com.example.fisheatfish.menus.LoginMenu;
-import com.example.fisheatfish.menus.SignUpMenu;
 import javafx.application.Application;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class Main extends Application {

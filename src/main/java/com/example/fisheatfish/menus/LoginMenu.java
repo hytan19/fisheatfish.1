@@ -60,7 +60,8 @@ public class LoginMenu {
 
                     ResultSet resultSet = preparedStatement.executeQuery();
                     if (resultSet.next()) {
-                        MainMenu.loginSuccessful();  // Mark user as logged in
+                        int userId = resultSet.getInt("id");  // Get the userId
+                        MainMenu.loginSuccessful(userId);  // Pass userId to MainMenu.loginSuccessful()
                         showAlert(stage, "Success", "Login Successful", AlertType.INFORMATION);
                         showMainMenu(stage);  // Show the main menu after successful login
                     } else {
@@ -93,6 +94,7 @@ public class LoginMenu {
         alert.showAndWait();
     }
 }
+
 
 
 
