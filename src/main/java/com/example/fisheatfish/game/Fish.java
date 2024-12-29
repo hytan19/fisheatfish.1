@@ -47,10 +47,10 @@ public abstract class Fish extends Circle {
     // Get speed based on fish type
     protected static double getSpeedByType(FishType type) {
         return switch (type) {
-            case SMALL -> 1.5;
-            case MEDIUM -> 2.5;
-            case LARGE -> 3.5;
-            case GIANT -> 4.5;
+            case SMALL -> 30.0;
+            case MEDIUM -> 50.0;
+            case LARGE -> 70.0;
+            case GIANT -> 90.0;
         };
     }
 

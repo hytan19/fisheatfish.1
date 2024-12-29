@@ -7,7 +7,7 @@ public class EnemyFish extends Fish {
     // Constructor that sets properties based on fish type
     public EnemyFish(FishType type) {
         super(type);  // Call the Fish constructor to set speed, radius, and color
-        this.movingLeft = false;  // Default direction is moving to the right
+        this.movingLeft = true;  // Set movingLeft to true by default for leftward movement
     }
 
     // Getter and setter for movingLeft
@@ -26,9 +26,9 @@ public class EnemyFish extends Fish {
 
         // Moving left or right based on the state of movingLeft
         if (movingLeft) {
-            newX += speed;  // Move to the left
+            newX -= speed;  // Move to the left (negative direction)
         } else {
-            newX -= speed;  // Move to the right
+            newX += speed;  // Move to the right (positive direction)
         }
 
         // Check if the fish has moved off the screen (wrap around logic)
@@ -43,6 +43,7 @@ public class EnemyFish extends Fish {
         }
     }
 }
+
 
 
 

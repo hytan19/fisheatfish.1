@@ -50,6 +50,9 @@ public class GameScene {
     private boolean moveLeft = false;
     private boolean moveRight = false;
 
+    private long lastTime = System.nanoTime(); // Tracks the last frame's time
+    private double spawnTimeAccumulator = 0;
+
     public GameScene(Stage stage) {
         this.stage = stage;
         this.pauseMenu = new PauseMenu(); // Initialize PauseMenu
@@ -104,51 +107,65 @@ public class GameScene {
     }
 
     private void startGameLoop(Group root) {
-        gameLoop = new Timeline(new KeyFrame(Duration.seconds(0.016), e -> gameLoopAction(root)));
+        gameLoop = new Timeline(new KeyFrame(Duration.seconds(0.016), e -> {
+            long now = System.nanoTime();
+            double deltaTime = (now - lastTime) / 1e9; // Convert nanoseconds to seconds
+            lastTime = now;
+            gameLoopAction(root, deltaTime);
+        }));
         gameLoop.setCycleCount(Timeline.INDEFINITE);
         gameLoop.play();
     }
 
-    private void gameLoopAction(Group root) {
-        if (gameOver) {
+    private void gameLoopAction(Group root, double deltaTime) {
+        if (gameOver || paused) {
             return;
         }
 
-        if (paused) {
-            return;
-        }
+        // Use the passed deltaTime directly instead of recalculating it
+        double elapsedTime = deltaTime;
 
-        updatePlayerMovement();
+        // Update player movement based on elapsed time
+        updatePlayerMovement(elapsedTime);
 
         // List to store enemy fish to be removed
         List<EnemyFish> toRemove = new ArrayList<>();
 
-        // Move enemy fish and check collisions
+        // Move enemy fish and check for collisions
         for (EnemyFish enemyFish : enemyFishList) {
-            enemyFish.setTranslateX(enemyFish.getTranslateX() - enemyFish.getSpeed());
+            // Ensure fish movement is scaled by deltaTime for smooth movement
+            double speed = enemyFish.getSpeed();  // Get the speed of each enemy fish
+            enemyFish.setTranslateX(enemyFish.getTranslateX() - speed * elapsedTime); // Move the fish based on speed and elapsed time
+
+            // Reset fish position if it moves off-screen
             if (enemyFish.getTranslateX() < PADDING) {
-                enemyFish.setTranslateX(800 - PADDING);
-                enemyFish.setTranslateY(new Random().nextInt((int) (565 - 2 * PADDING)) + PADDING);
+                enemyFish.setTranslateX(800 - PADDING); // Set the fish back to the right side of the screen
+                enemyFish.setTranslateY(new Random().nextInt((int) (565 - 2 * PADDING)) + PADDING); // Randomize y position
             }
 
+            // Check collision with the player fish
             if (checkCollision(playerFish, enemyFish)) {
                 if (playerFish.getRadius() >= enemyFish.getRadius()) {
+                    // Player eats the enemy fish
                     score += enemyFish.getPointValue();
                     playerFish.incrementFishEaten();  // Track the number of fish eaten
                     updateScoreLabel();
-                    toRemove.add(enemyFish);
+                    toRemove.add(enemyFish);  // Mark the enemy fish for removal
                 } else {
+                    // End the game if the player collides with a larger enemy fish
                     endGame();
                     return;
                 }
             }
         }
 
+        // Remove enemy fish that have been eaten or are out of bounds
         for (EnemyFish enemyFish : toRemove) {
-            root.getChildren().remove(enemyFish);
-            enemyFishList.remove(enemyFish);
+            root.getChildren().remove(enemyFish);  // Remove fish from the scene
+            enemyFishList.remove(enemyFish);  // Remove fish from the list
         }
 
+        // Handle level progression based on score
         if (score >= 50 && currentLevel == 1) {
             progressToNextLevel(root, 2);
         } else if (score >= 100 && currentLevel == 2) {
@@ -157,15 +174,26 @@ public class GameScene {
             progressToNextLevel(root, 4);
         }
 
+        // Update player score and level display
         playerFish.setScore(score);
         updateLevelLabel();
 
-        enemySpawnTimer++;
-        if (enemySpawnTimer > 80 && enemyFishList.size() < MAX_ENEMY_FISH) {
-            spawnEnemyFish(root, determineFishTypeBasedOnLevel());
-            enemySpawnTimer = 0;
+        // Debugging: Print spawn timer and enemy fish count
+        System.out.println("Spawn Timer: " + spawnTimeAccumulator);
+        System.out.println("Enemy Fish Count: " + enemyFishList.size());
+
+        // Enemy fish spawning
+        spawnTimeAccumulator += elapsedTime; // Accumulate elapsed time for spawning
+
+        // Adjust spawn interval and ensure the number of enemy fish doesn't exceed the maximum limit
+        if (spawnTimeAccumulator >= 0.5 && enemyFishList.size() < MAX_ENEMY_FISH) {
+            System.out.println("Spawning Enemy Fish: " + enemyFishList.size());
+            spawnEnemyFish(root, determineFishTypeBasedOnLevel()); // Spawn enemy fish based on current level
+            spawnTimeAccumulator = 0; // Reset spawn timer after spawning
         }
     }
+
+
 
     private boolean checkCollision(PlayerFish playerFish, EnemyFish enemyFish) {
         double dx = playerFish.getTranslateX() - enemyFish.getTranslateX();
@@ -198,17 +226,44 @@ public class GameScene {
         Random random = new Random();
         int numFishToSpawn = 1;
 
+        // Get screen width and height
+        double screenWidth = 800;  // Or use your actual screen width if different
+        double screenHeight = 600; // Or use your actual screen height if different
+
+        // Define a speed multiplier based on the current level or game state
+        double speedMultiplier = 2.0;  // Default multiplier (could increase based on level)
+
+        // For example, increase the multiplier as the level progresses
+        if (currentLevel > 1) {
+            speedMultiplier = 3.0;  // Increase speed by 1.5x on higher levels
+        }
+        if (currentLevel > 2) {
+            speedMultiplier = 4.0;  // Increase speed by 2x on even higher levels
+        }
+
         for (int i = 0; i < numFishToSpawn; i++) {
             EnemyFish enemyFish = new EnemyFish(type);
+
+            // Apply the speed multiplier to the enemy fish's speed
+            enemyFish.speed *= speedMultiplier;
+
             boolean validPosition = false;
             double x = 0;
             double y = 0;
 
+            // Ensure spawn happens at the rightmost part of the screen
             while (!validPosition) {
-                x = random.nextInt((int) (800 - 2 * PADDING)) + 800;
-                y = random.nextInt((int) (565 - 2 * PADDING)) + PADDING;
+                // x should always be the rightmost edge (with padding from the edge)
+                x = screenWidth - PADDING;
+
+                // Randomly generate the y position within the bounds (from PADDING to screenHeight - PADDING)
+                y = random.nextInt((int) (screenHeight - 2 * PADDING)) + PADDING;
+
+                // Print spawn positions to check if they are within bounds
+                System.out.println("Trying to spawn at x: " + x + ", y: " + y);
 
                 validPosition = true;
+                // Ensure the new position doesn't overlap with existing fish
                 for (EnemyFish existingFish : enemyFishList) {
                     double distance = Math.sqrt(Math.pow(x - existingFish.getTranslateX(), 2) +
                             Math.pow(y - existingFish.getTranslateY(), 2));
@@ -219,12 +274,20 @@ public class GameScene {
                 }
             }
 
+            // Set the position and add to the scene
             enemyFish.setTranslateX(x);
             enemyFish.setTranslateY(y);
+
+            // Print final position for debugging
+            System.out.println("Enemy Fish Spawned at x: " + x + ", y: " + y);
+
+            // Add the fish to the list and the scene
             enemyFishList.add(enemyFish);
-            root.getChildren().add(enemyFish);
+            root.getChildren().add(enemyFish);  // Ensure fish is added to the scene
         }
     }
+
+
 
     private EnemyFish.FishType determineFishTypeBasedOnLevel() {
         Random random = new Random();
@@ -277,22 +340,24 @@ public class GameScene {
     }
 
     // Update the player's position based on key states
-    private void updatePlayerMovement() {
+    private void updatePlayerMovement(double deltaTime) {
+        double speed = 50; // Pixels per second
+
         // Move up
         if (moveUp) {
-            playerFish.setTranslateY(Math.max(PADDING, playerFish.getTranslateY() - 5));
+            playerFish.setTranslateY(Math.max(PADDING, playerFish.getTranslateY() - 3));
         }
         // Move down
         if (moveDown) {
-            playerFish.setTranslateY(Math.min(565 - PADDING, playerFish.getTranslateY() + 5));
+            playerFish.setTranslateY(Math.min(565 - PADDING, playerFish.getTranslateY() + 3));
         }
         // Move left
         if (moveLeft) {
-            playerFish.setTranslateX(Math.max(PADDING, playerFish.getTranslateX() - 5));
+            playerFish.setTranslateX(Math.max(PADDING, playerFish.getTranslateX() - 3));
         }
         // Move right
         if (moveRight) {
-            playerFish.setTranslateX(Math.min(800 - PADDING, playerFish.getTranslateX() + 5));
+            playerFish.setTranslateX(Math.min(800 - PADDING, playerFish.getTranslateX() + 3));
         }
     }
 
@@ -387,7 +452,6 @@ public class GameScene {
         restartStage.setScene(scene);
         restartStage.show();
     }
-
 
     private void exitToMainMenu() {
         gameOverPanel.hideGameOverPanel((Group) stage.getScene().getRoot());
