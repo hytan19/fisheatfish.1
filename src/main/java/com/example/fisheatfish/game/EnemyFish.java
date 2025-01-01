@@ -1,48 +1,53 @@
 package com.example.fisheatfish.game;
 
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
 public class EnemyFish extends Fish {
 
-    private boolean movingLeft;  // New property to track movement direction
+    private ImageView fishImageView;  // ImageView for displaying the enemy fish
 
-    // Constructor that sets properties based on fish type
+    // Constructor for EnemyFish that accepts fish type
     public EnemyFish(FishType type) {
-        super(type);  // Call the Fish constructor to set speed, radius, and color
-        this.movingLeft = true;  // Set movingLeft to true by default for leftward movement
+        super(type);  // Call the parent class constructor to set up basic properties (radius, color, speed)
+
+        // Set up the image based on the fish type
+        Image fishImage = getFishImageByType(type);
+        fishImageView = new ImageView(fishImage);
+
+        // Set the initial position and size of the image based on the fish's radius
+        fishImageView.setX(getTranslateX() - getRadius());
+        fishImageView.setY(getTranslateY() - getRadius());
+        fishImageView.setFitWidth(getRadius() * 2);
+        fishImageView.setFitHeight(getRadius() * 2);
     }
 
-    // Getter and setter for movingLeft
-    public boolean isMovingLeft() {
-        return movingLeft;
+    // Method to get the appropriate image for each type of enemy fish
+    private Image getFishImageByType(FishType type) {
+        return switch (type) {
+            case SMALL -> new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\enemyfish\\smallfish.png");  // Path to the small fish image
+            case MEDIUM -> new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\enemyfish\\mediumfish.png");  // Path to the medium fish image
+            case LARGE -> new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\enemyfish\\bigfish.png");  // Path to the large fish image
+            case GIANT -> new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\enemyfish\\giantfish.png");  // Path to the giant fish image
+        };
     }
 
-    public void setMovingLeft(boolean movingLeft) {
-        this.movingLeft = movingLeft;
-    }
-
-    // Override the move method to implement movement behavior
+    // Method to move the enemy fish (to be implemented as needed)
     @Override
     public void move(double padding) {
-        double newX = getTranslateX();
+        // Implement movement logic here, for example:
+        setTranslateX(getTranslateX() - getSpeed());
+        checkBounds(padding);  // Ensure the fish stays within bounds
+        fishImageView.setX(getTranslateX() - getRadius());
+        fishImageView.setY(getTranslateY() - getRadius());
+    }
 
-        // Moving left or right based on the state of movingLeft
-        if (movingLeft) {
-            newX -= speed;  // Move to the left (negative direction)
-        } else {
-            newX += speed;  // Move to the right (positive direction)
-        }
-
-        // Check if the fish has moved off the screen (wrap around logic)
-        if (newX < padding) {
-            setTranslateX(GAME_WIDTH - padding);  // Respawn at the right side of the screen
-            setTranslateY(Math.random() * (GAME_HEIGHT - 2 * padding) + padding);  // Random Y position
-        } else if (newX > GAME_WIDTH - padding) {
-            setTranslateX(padding);  // Respawn at the left side of the screen
-            setTranslateY(Math.random() * (GAME_HEIGHT - 2 * padding) + padding);  // Random Y position
-        } else {
-            setTranslateX(newX);  // Update the X position
-        }
+    // Getter for the ImageView to add it to the scene
+    public ImageView getFishImageView() {
+        return fishImageView;
     }
 }
+
 
 
 

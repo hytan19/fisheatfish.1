@@ -1,18 +1,40 @@
 package com.example.fisheatfish.game;
 
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 
 public class PlayerFish extends Fish {
 
     private int score = 0;      // Track player's score
     private int fishEaten = 0;  // Track the number of fish eaten
+    private ImageView fishImageView;  // ImageView for displaying the player fish
+    private Image fishImageRight; // Image when facing right
+    private Image fishImageLeft;  // Image when facing left
 
-    // Constructor for PlayerFish with a distinct color (blue)
+    // Constructor for PlayerFish with a distinct color (blue) and the image
     public PlayerFish() {
         super(FishType.SMALL);  // Default to small fish
         setFill(Color.BLUE);    // Set player fish color to blue
-        setTranslateX(300);     // Initial X position of the player fish
-        setTranslateY(200);     // Initial Y position of the player fish
+
+        // Set initial position of the fish
+        setTranslateX(400); // Set X to the center of the screen
+        setTranslateY(300); // Set Y to the center of the screen
+
+        // Initialize the images for both directions
+        fishImageRight = new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\playerfish\\moveright.png");  // Image for moving right
+        fishImageLeft = new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\playerfish\\moveleft.png");   // Image for moving left
+
+        // Initialize the ImageView with the right-facing fish image
+        fishImageView = new ImageView(fishImageRight);
+
+        // Set the initial position of the fish image, centered based on the PlayerFish
+        fishImageView.setX(getTranslateX() - getRadius());
+        fishImageView.setY(getTranslateY() - getRadius());
+
+        // Set the size of the image based on the radius
+        fishImageView.setFitWidth(getRadius() * 2);
+        fishImageView.setFitHeight(getRadius() * 2);
     }
 
     // Method to grow the player fish based on the score
@@ -24,31 +46,10 @@ public class PlayerFish extends Fish {
         } else if (score >= 150) {
             setRadius(40);  // Grow to radius 40 when score is 150 and above
         }
-    }
 
-    // Movement methods for player fish
-    public void moveUp() {
-        if (getTranslateY() - 5 >= 0) {  // Prevent moving above the top edge
-            setTranslateY(getTranslateY() - 5);
-        }
-    }
-
-    public void moveDown() {
-        if (getTranslateY() + 5 <= GAME_HEIGHT) {  // Prevent moving below the bottom edge
-            setTranslateY(getTranslateY() + 5);
-        }
-    }
-
-    public void moveLeft() {
-        if (getTranslateX() - 5 >= 0) {  // Prevent moving past the left edge
-            setTranslateX(getTranslateX() - 5);
-        }
-    }
-
-    public void moveRight() {
-        if (getTranslateX() + 5 <= GAME_WIDTH) {  // Prevent moving past the right edge
-            setTranslateX(getTranslateX() + 5);
-        }
+        // Update the image size after growing the fish
+        fishImageView.setFitWidth(getRadius() * 2);
+        fishImageView.setFitHeight(getRadius() * 2);
     }
 
     // Set the score for the player fish and trigger growth
@@ -78,7 +79,30 @@ public class PlayerFish extends Fish {
         // The movement of the player fish is handled by keyboard input.
         // Therefore, no need for any additional logic here.
     }
+
+    // Getter for the ImageView, so you can add it to the scene
+    public ImageView getFishImageView() {
+        return fishImageView;
+    }
+
+    // Switch to the left-facing image
+    public void setLeftImage() {
+        fishImageView.setImage(fishImageLeft);
+    }
+
+    // Switch to the right-facing image
+    public void setRightImage() {
+        fishImageView.setImage(fishImageRight);
+    }
 }
+
+
+
+
+
+
+
+
 
 
 

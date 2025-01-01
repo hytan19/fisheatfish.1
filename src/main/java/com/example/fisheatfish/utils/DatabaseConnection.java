@@ -23,28 +23,72 @@ public class DatabaseConnection {
 
     // Method to insert a player's score into the player_scores table
     public static void saveScore(int userId, int score, int level, int fishEaten) {
-        // Step 1: Get the current gameplay_count for the user
-        int currentGameplayCount = getCurrentGameplayCount(userId);
-
-        // Step 2: Insert the new score with the incremented gameplay_count
+        // Insert the new score (no need to check is_high_score)
         String query = "INSERT INTO player_scores (user_id, score, level, fish_eaten, gameplay_count, date_played) " +
                 "VALUES (?, ?, ?, ?, ?, NOW())";
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 
-            statement.setInt(1, userId);    // Store the player's user_id
-            statement.setInt(2, score);     // Store the score
-            statement.setInt(3, level);     // Store the level
-            statement.setInt(4, fishEaten); // Store the number of fish eaten
-            statement.setInt(5, currentGameplayCount + 1); // Incremented gameplay_count
+            statement.setInt(1, userId);  // User ID
+            statement.setInt(2, score);   // Score
+            statement.setInt(3, level);   // Level
+            statement.setInt(4, fishEaten); // Fish eaten
+            statement.setInt(5, getCurrentGameplayCount(userId) + 1); // Incremented gameplay count
 
-            statement.executeUpdate(); // Execute the insert query
+            statement.executeUpdate();
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
+    // Method to retrieve the current high score for a specific user
+    public static int getHighScore(int userId) {
+        // SQL query to retrieve the maximum score for the user
+        String query = "SELECT MAX(score) AS high_score FROM player_scores WHERE user_id = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setInt(1, userId);  // Set the userId parameter
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getInt("high_score");  // Get the maximum score for the user
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;  // Return 0 if no score is found for the user
+    }
+
+    // Method to update the high score for a specific player by userId
+    public static void updateHighScore(int userId, int newHighScore) {
+        // SQL query to update the high score for the player
+        String query = "UPDATE player_scores SET score = ? WHERE user_id = ? AND score < ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            // Set parameters: new high score, userId, and check if current score is lower than the new high score
+            statement.setInt(1, newHighScore);  // The new high score
+            statement.setInt(2, userId);        // User ID
+            statement.setInt(3, newHighScore);  // Only update if current score is less than the new high score
+
+            int rowsAffected = statement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("High score updated successfully for userId: " + userId);
+            } else {
+                System.out.println("The new high score is not greater than the current score.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     // Method to get the current gameplay count for the user
     private static int getCurrentGameplayCount(int userId) {
@@ -66,7 +110,8 @@ public class DatabaseConnection {
     }
 
     public static int getTotalGameplayCount(int userId) {
-        String query = "SELECT SUM(gameplay_count) AS total_gameplay_count FROM player_scores WHERE user_id = ?";
+        String query = "SELECT COUNT(*) AS total_gameplay_count FROM player_scores WHERE user_id = ?";
+
         int totalGameplayCount = 0;
 
         try (Connection connection = getConnection();
@@ -86,32 +131,6 @@ public class DatabaseConnection {
         return totalGameplayCount;
     }
 
-    // Method to retrieve the last score, level, fish_eaten, and gameplay_count for a specific player by userId
-    public static PlayerScore getLastGameStats(int userId) {
-        String query = "SELECT score, level, fish_eaten, gameplay_count FROM player_scores WHERE user_id = ? ORDER BY date_played DESC LIMIT 1";
-        PlayerScore lastGameStats = null;
-
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-
-            statement.setInt(1, userId);  // Filter by user_id
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    int score = resultSet.getInt("score");
-                    int level = resultSet.getInt("level");
-                    int fishEaten = resultSet.getInt("fish_eaten");
-                    int gameplayCount = resultSet.getInt("gameplay_count");
-
-                    lastGameStats = new PlayerScore(score, level, fishEaten, gameplayCount);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return lastGameStats;
-    }
 
     // Method to retrieve the last score for a specific player by userId
     public static int getLastScore(int userId) {
@@ -150,36 +169,6 @@ public class DatabaseConnection {
         }
         return 1; // Return level 1 if no level is found
     }
-
-    // Method to retrieve all scores for a specific player by userId
-    public static List<PlayerScore> loadScores(int userId) {
-        List<PlayerScore> scores = new ArrayList<>();
-        String query = "SELECT score, level, fish_eaten, gameplay_count, date_played FROM player_scores WHERE user_id = ? ORDER BY date_played DESC";
-
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-
-            statement.setInt(1, userId);  // Filter scores by user_id
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    int score = resultSet.getInt("score");
-                    int level = resultSet.getInt("level");
-                    int fishEaten = resultSet.getInt("fish_eaten");
-                    int gameplayCount = resultSet.getInt("gameplay_count");
-                    Timestamp datePlayed = resultSet.getTimestamp("date_played");
-
-                    // Creating PlayerScore object and adding to list
-                    PlayerScore playerScore = new PlayerScore(score, level, fishEaten, gameplayCount, datePlayed);
-                    scores.add(playerScore);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return scores;
-    }
-
 
 
     public static List<PlayerScore> loadScores(int userId, int page, int entriesPerPage) {

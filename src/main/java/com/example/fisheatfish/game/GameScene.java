@@ -10,8 +10,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.geometry.Insets;
-import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import com.example.fisheatfish.menus.PauseMenu;
 import com.example.fisheatfish.menus.GameOverPanel;
 import com.example.fisheatfish.menus.MainMenu;
@@ -59,15 +59,39 @@ public class GameScene {
         this.gameOverPanel = new GameOverPanel(); // Initialize GameOverPanel
     }
 
+    private void addBackground(Group root) {
+        // Load the background image from the resources folder
+        Image backgroundImage = new Image("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\images\\fish\\Background\\sea.jpeg");
+
+        // Create an ImageView for the background
+        ImageView backgroundImageView = new ImageView(backgroundImage);
+
+        // Set the width and height of the background to match the game window size
+        backgroundImageView.setFitWidth(800);  // Adjust to your screen width
+        backgroundImageView.setFitHeight(565); // Adjust to your screen height
+
+        // Set the position of the background (0, 0) to start from the top-left corner
+        backgroundImageView.setX(0);
+        backgroundImageView.setY(0);
+
+        // Add the background image to the root Group (at index 0 so it stays behind other elements)
+        root.getChildren().add(0, backgroundImageView);
+    }
+
     public void show() {
         Group root = new Group();
         root.setStyle("-fx-padding: " + PADDING + ";");
 
+        // Add the background to the game scene
+        addBackground(root);  // This adds the background image
+
         // Initialize player fish
         playerFish = new PlayerFish();
-        playerFish.setTranslateX(300);
+        playerFish.setTranslateX(300); // Set the initial position for the player fish
         playerFish.setTranslateY(200);
-        root.getChildren().add(playerFish);
+
+        // Add the player's fish image to the root of the scene
+        root.getChildren().add(playerFish.getFishImageView());
 
         // Initialize enemy fish list
         enemyFishList = new ArrayList<>();
@@ -106,6 +130,8 @@ public class GameScene {
         stage.show();
     }
 
+
+
     private void startGameLoop(Group root) {
         gameLoop = new Timeline(new KeyFrame(Duration.seconds(0.016), e -> {
             long now = System.nanoTime();
@@ -131,16 +157,22 @@ public class GameScene {
         // List to store enemy fish to be removed
         List<EnemyFish> toRemove = new ArrayList<>();
 
-        // Move enemy fish and check for collisions
+// Move enemy fish and check for collisions
         for (EnemyFish enemyFish : enemyFishList) {
             // Ensure fish movement is scaled by deltaTime for smooth movement
             double speed = enemyFish.getSpeed();  // Get the speed of each enemy fish
             enemyFish.setTranslateX(enemyFish.getTranslateX() - speed * elapsedTime); // Move the fish based on speed and elapsed time
 
+            // Update the image position as well
+            enemyFish.getFishImageView().setX(enemyFish.getTranslateX() - enemyFish.getRadius());
+            enemyFish.getFishImageView().setY(enemyFish.getTranslateY() - enemyFish.getRadius());
+
             // Reset fish position if it moves off-screen
             if (enemyFish.getTranslateX() < PADDING) {
                 enemyFish.setTranslateX(800 - PADDING); // Set the fish back to the right side of the screen
                 enemyFish.setTranslateY(new Random().nextInt((int) (565 - 2 * PADDING)) + PADDING); // Randomize y position
+                enemyFish.getFishImageView().setX(enemyFish.getTranslateX() - enemyFish.getRadius());
+                enemyFish.getFishImageView().setY(enemyFish.getTranslateY() - enemyFish.getRadius());
             }
 
             // Check collision with the player fish
@@ -159,13 +191,13 @@ public class GameScene {
             }
         }
 
-        // Remove enemy fish that have been eaten or are out of bounds
+// Remove enemy fish that have been eaten or are out of bounds
         for (EnemyFish enemyFish : toRemove) {
-            root.getChildren().remove(enemyFish);  // Remove fish from the scene
+            root.getChildren().remove(enemyFish.getFishImageView());  // Remove fish from the scene using the ImageView
             enemyFishList.remove(enemyFish);  // Remove fish from the list
         }
 
-        // Handle level progression based on score
+// Handle level progression based on score
         if (score >= 50 && currentLevel == 1) {
             progressToNextLevel(root, 2);
         } else if (score >= 100 && currentLevel == 2) {
@@ -173,6 +205,7 @@ public class GameScene {
         } else if (score >= 150 && currentLevel == 3) {
             progressToNextLevel(root, 4);
         }
+
 
         // Update player score and level display
         playerFish.setScore(score);
@@ -278,15 +311,18 @@ public class GameScene {
             enemyFish.setTranslateX(x);
             enemyFish.setTranslateY(y);
 
+            // Set the ImageView position as well
+            enemyFish.getFishImageView().setX(x - enemyFish.getRadius());
+            enemyFish.getFishImageView().setY(y - enemyFish.getRadius());
+
             // Print final position for debugging
             System.out.println("Enemy Fish Spawned at x: " + x + ", y: " + y);
 
             // Add the fish to the list and the scene
             enemyFishList.add(enemyFish);
-            root.getChildren().add(enemyFish);  // Ensure fish is added to the scene
+            root.getChildren().add(enemyFish.getFishImageView());  // Add the image view to the scene
         }
     }
-
 
 
     private EnemyFish.FishType determineFishTypeBasedOnLevel() {
@@ -346,18 +382,24 @@ public class GameScene {
         // Move up
         if (moveUp) {
             playerFish.setTranslateY(Math.max(PADDING, playerFish.getTranslateY() - 3));
+            playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());  // Update image position
         }
         // Move down
         if (moveDown) {
             playerFish.setTranslateY(Math.min(565 - PADDING, playerFish.getTranslateY() + 3));
+            playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());  // Update image position
         }
         // Move left
         if (moveLeft) {
             playerFish.setTranslateX(Math.max(PADDING, playerFish.getTranslateX() - 3));
+            playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());  // Update image position
+            playerFish.setLeftImage();  // Switch to the left-facing image
         }
         // Move right
         if (moveRight) {
             playerFish.setTranslateX(Math.min(800 - PADDING, playerFish.getTranslateX() + 3));
+            playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());  // Update image position
+            playerFish.setRightImage();  // Switch to the right-facing image
         }
     }
 
@@ -378,16 +420,31 @@ public class GameScene {
         int userId = MainMenu.getLoggedInUserId();
         int fishEaten = playerFish.getFishEaten(); // Replace with actual logic to get fish eaten by the player.
 
+        // Initialize the high score variable
+        int highScore = 0;
+
         if (userId != -1) {
-            // Save the score to the database
-            DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);
+            // Fetch the current high score for the user from the database
+            highScore = DatabaseConnection.getHighScore(userId);
+
+            // If the current score exceeds the high score, save the new score
+            if (score > highScore) {
+                // Save the new score (this implicitly becomes the new high score)
+                DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);
+                highScore = score;  // Update highScore to the current score
+            } else {
+                // Save the score without marking it as a new high score
+                DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);
+            }
         }
 
-        // Show the Game Over panel with score and level
+        // Show the Game Over panel with the current score, level, and high score
         gameOverPanel.showGameOverPanel(
                 (Group) stage.getScene().getRoot(),  // Root node of the scene
                 score,                              // Current score
                 currentLevel,                       // Current level
+                highScore,                          // High score for the user
+                MainMenu.getLoggedInUserId(),       // User ID
                 this::restartGame,                  // Restart method (Runnable)
                 this::exitToMainMenu                // Exit to Main Menu method (Runnable)
         );
@@ -413,45 +470,34 @@ public class GameScene {
         updateScoreLabel();
         updateLevelLabel();
 
-        // Display the last score and level on the restart panel
-        displayRestartInfo(lastScore, lastLevel);  // Show the score and level on the restart panel
-
         // Clear existing enemy fish
         Group root = (Group) stage.getScene().getRoot();
+
+        // Remove the enemy fish images from the scene
         for (EnemyFish enemyFish : enemyFishList) {
-            root.getChildren().remove(enemyFish);
+            root.getChildren().remove(enemyFish.getFishImageView());  // Remove the ImageView from the scene
         }
-        enemyFishList.clear();
+        enemyFishList.clear();  // Clear the list of enemy fish
 
         // Reset player fish position and size based on the last level
-        playerFish.setTranslateX(300);
-        playerFish.setTranslateY(200);
-        playerFish.setRadius(getPlayerFishSize(lastLevel));  // Set the size based on the last level
+        playerFish.setTranslateX(300);  // You can adjust this if needed
+        playerFish.setTranslateY(200);  // You can adjust this if needed
+        playerFish.setRadius(10);  // Reset radius to the initial size
 
-        // Restart game loop
+        // Add the background again (after clearing the screen)
+        addBackground(root);  // Reapply the background
+
+        // Restart the game loop
         gameLoop.play();
 
         // Hide the Game Over panel if it's visible
         gameOverPanel.hideGameOverPanel(root);
+
+        // Spawn new enemy fish based on current level (if desired)
+        spawnEnemyFish(root, determineFishTypeBasedOnLevel());  // This can be adjusted as needed
     }
 
-    private void displayRestartInfo(int score, int level) {
-        // Create labels for score and level
-        Label scoreLabel = new Label("Score: " + score);
-        Label levelLabel = new Label("Level: " + level);
 
-        // Assuming you have a VBox or some layout to hold these labels
-        VBox restartPanel = new VBox(10);
-        restartPanel.setPadding(new Insets(20));
-        restartPanel.getChildren().addAll(scoreLabel, levelLabel);
-
-        // Show the restart panel (this could be a new stage, or you could update the current scene)
-        Stage restartStage = new Stage();
-        restartStage.setTitle("Game Restart");
-        Scene scene = new Scene(restartPanel, 300, 200);
-        restartStage.setScene(scene);
-        restartStage.show();
-    }
 
     private void exitToMainMenu() {
         gameOverPanel.hideGameOverPanel((Group) stage.getScene().getRoot());

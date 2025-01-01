@@ -41,7 +41,8 @@ public class MainMenu {
         gameHistoryButton.setOnAction(e -> showGameHistory(stage));
 
         Button leaderboardButton = new Button("Leaderboard");
-        leaderboardButton.setOnAction(e -> showLeaderboard(stage));
+        //leaderboardButton.setOnAction(e -> new LeaderboardMenu().show(stage));
+
 
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> logout(stage));
@@ -148,10 +149,6 @@ public class MainMenu {
         stage.show();
     }
 
-    private static void showLeaderboard(Stage stage) {
-        // Implement the leaderboard functionality
-        System.out.println("Showing Leaderboard");
-    }
 
     private static void logout(Stage stage) {
         isLoggedIn = false;

@@ -10,6 +10,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import com.example.fisheatfish.utils.DatabaseConnection;
+import com.example.fisheatfish.utils.PasswordHasher;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,12 +52,15 @@ public class LoginMenu {
             return;
         }
 
+        // Hash the entered password
+        String hashedPassword = PasswordHasher.hashPassword(password);
+
         try (Connection connection = DatabaseConnection.getConnection()) {
             if (connection != null) {
                 String query = "SELECT * FROM users WHERE username = ? AND password = ?";
                 try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
                     preparedStatement.setString(1, username);
-                    preparedStatement.setString(2, password);
+                    preparedStatement.setString(2, hashedPassword);  // Compare the hashed password
 
                     ResultSet resultSet = preparedStatement.executeQuery();
                     if (resultSet.next()) {
@@ -77,6 +81,7 @@ public class LoginMenu {
             showAlert(stage, "Error", "Database connection error", AlertType.ERROR);
         }
     }
+
 
     private void showMainMenu(Stage stage) {
         // This method shows the MainMenu after a successful login

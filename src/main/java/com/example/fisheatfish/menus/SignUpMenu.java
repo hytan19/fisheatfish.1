@@ -10,6 +10,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import com.example.fisheatfish.utils.DatabaseConnection;
+import com.example.fisheatfish.utils.PasswordHasher;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -65,13 +66,21 @@ public class SignUpMenu {
             return;
         }
 
+        // Hash the password before storing it
+        String hashedPassword = PasswordHasher.hashPassword(password);
+
+        if (hashedPassword == null) {
+            showAlert(stage, "Error", "Error hashing password", AlertType.ERROR);
+            return;
+        }
+
         try (Connection connection = DatabaseConnection.getConnection()) {
             if (connection != null) {
                 String query = "INSERT INTO users (username, name, password) VALUES (?, ?, ?)";
                 try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
                     preparedStatement.setString(1, username);
                     preparedStatement.setString(2, name);
-                    preparedStatement.setString(3, password);  // Store the password securely (e.g., hashing in a real app)
+                    preparedStatement.setString(3, hashedPassword);  // Store the hashed password
                     int rowsAffected = preparedStatement.executeUpdate();
 
                     if (rowsAffected > 0) {
@@ -90,6 +99,7 @@ public class SignUpMenu {
             showAlert(stage, "Error", "Database connection error", AlertType.ERROR);
         }
     }
+
 
     // Check if the username already exists in the database
     private boolean isUsernameTaken(String username) {
