@@ -19,6 +19,9 @@ import com.example.fisheatfish.utils.DatabaseConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import java.io.File;
 
 public class GameScene {
 
@@ -53,10 +56,29 @@ public class GameScene {
     private long lastTime = System.nanoTime(); // Tracks the last frame's time
     private double spawnTimeAccumulator = 0;
 
+    // Sound attributes
+    private MediaPlayer bgmPlayer;
+    private MediaPlayer eatSoundPlayer;
+    private MediaPlayer levelUpSoundPlayer;
+    private MediaPlayer gameOverSoundPlayer;
+
+
     public GameScene(Stage stage) {
         this.stage = stage;
         this.pauseMenu = new PauseMenu(); // Initialize PauseMenu
         this.gameOverPanel = new GameOverPanel(); // Initialize GameOverPanel
+
+        // Load sounds
+        bgmPlayer = createMediaPlayer("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\sound\\bgm.wav");
+        eatSoundPlayer = createMediaPlayer("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\sound\\eating (mp3cut.net).mp3");
+        levelUpSoundPlayer = createMediaPlayer("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\sound\\levelup.mp3");
+        gameOverSoundPlayer = createMediaPlayer("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\sound\\collision.mp3");
+    }
+
+    private MediaPlayer createMediaPlayer(String filePath) {
+        Media media = new Media(new File(filePath).toURI().toString());
+        MediaPlayer player = new MediaPlayer(media);
+        return player;
     }
 
     private void addBackground(Group root) {
@@ -81,6 +103,10 @@ public class GameScene {
     public void show() {
         Group root = new Group();
         root.setStyle("-fx-padding: " + PADDING + ";");
+
+        // Start background music
+        bgmPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop the music
+        bgmPlayer.play();
 
         // Add the background to the game scene
         addBackground(root);  // This adds the background image
@@ -131,7 +157,6 @@ public class GameScene {
     }
 
 
-
     private void startGameLoop(Group root) {
         gameLoop = new Timeline(new KeyFrame(Duration.seconds(0.016), e -> {
             long now = System.nanoTime();
@@ -157,7 +182,7 @@ public class GameScene {
         // List to store enemy fish to be removed
         List<EnemyFish> toRemove = new ArrayList<>();
 
-// Move enemy fish and check for collisions
+    // Move enemy fish and check for collisions
         for (EnemyFish enemyFish : enemyFishList) {
             // Ensure fish movement is scaled by deltaTime for smooth movement
             double speed = enemyFish.getSpeed();  // Get the speed of each enemy fish
@@ -182,22 +207,28 @@ public class GameScene {
                     score += enemyFish.getPointValue();
                     playerFish.incrementFishEaten();  // Track the number of fish eaten
                     updateScoreLabel();
+                    // Reset and play eating sound every time the player eats an enemy fish
+                    eatSoundPlayer.stop();  // Stop the sound if it's still playing
+                    eatSoundPlayer.play();  // Play the sound again
                     toRemove.add(enemyFish);  // Mark the enemy fish for removal
                 } else {
                     // End the game if the player collides with a larger enemy fish
+                    // Play game over sound when the player loses
+                    gameOverSoundPlayer.stop();  // Stop the sound if it's still playing
+                    gameOverSoundPlayer.play();  // Play the sound again
                     endGame();
                     return;
                 }
             }
         }
 
-// Remove enemy fish that have been eaten or are out of bounds
+        // Remove enemy fish that have been eaten or are out of bounds
         for (EnemyFish enemyFish : toRemove) {
             root.getChildren().remove(enemyFish.getFishImageView());  // Remove fish from the scene using the ImageView
             enemyFishList.remove(enemyFish);  // Remove fish from the list
         }
 
-// Handle level progression based on score
+        // Handle level progression based on score
         if (score >= 50 && currentLevel == 1) {
             progressToNextLevel(root, 2);
         } else if (score >= 100 && currentLevel == 2) {
@@ -205,7 +236,6 @@ public class GameScene {
         } else if (score >= 150 && currentLevel == 3) {
             progressToNextLevel(root, 4);
         }
-
 
         // Update player score and level display
         playerFish.setScore(score);
@@ -226,8 +256,6 @@ public class GameScene {
         }
     }
 
-
-
     private boolean checkCollision(PlayerFish playerFish, EnemyFish enemyFish) {
         double dx = playerFish.getTranslateX() - enemyFish.getTranslateX();
         double dy = playerFish.getTranslateY() - enemyFish.getTranslateY();
@@ -244,6 +272,10 @@ public class GameScene {
         } else if (level == 3) {
             levelMidpointScore = 125;
         }
+
+        // Play level-up sound
+        levelUpSoundPlayer.stop();
+        levelUpSoundPlayer.play();
     }
 
     private double getPlayerFishSize(int level) {
@@ -261,17 +293,17 @@ public class GameScene {
 
         // Get screen width and height
         double screenWidth = 800;  // Or use your actual screen width if different
-        double screenHeight = 600; // Or use your actual screen height if different
+        double screenHeight = 565; // Or use your actual screen height if different
 
         // Define a speed multiplier based on the current level or game state
-        double speedMultiplier = 2.0;  // Default multiplier (could increase based on level)
+        double speedMultiplier = 3.0;  // Default multiplier (could increase based on level)
 
         // For example, increase the multiplier as the level progresses
         if (currentLevel > 1) {
-            speedMultiplier = 3.0;  // Increase speed by 1.5x on higher levels
+            speedMultiplier = 4.0;  // Increase speed by 1.5x on higher levels
         }
         if (currentLevel > 2) {
-            speedMultiplier = 4.0;  // Increase speed by 2x on even higher levels
+            speedMultiplier = 5.0;  // Increase speed by 2x on even higher levels
         }
 
         for (int i = 0; i < numFishToSpawn; i++) {
@@ -324,25 +356,37 @@ public class GameScene {
         }
     }
 
-
     private EnemyFish.FishType determineFishTypeBasedOnLevel() {
         Random random = new Random();
 
+        // First, we determine the type based on the score threshold (level progress)
         if (score >= levelMidpointScore) {
             if (currentLevel == 1) {
-                return random.nextInt(10) < 8 ? EnemyFish.FishType.SMALL : EnemyFish.FishType.MEDIUM;
+                // Level 1: Lower chance for Small fish (50%) and higher chance for Medium fish (50%)
+                return random.nextInt(10) < 5 ? EnemyFish.FishType.SMALL : EnemyFish.FishType.MEDIUM;
             } else if (currentLevel == 2) {
-                return random.nextInt(10) < 5 ? EnemyFish.FishType.SMALL :
+                // Level 2: Lower chance for Small fish (40%), Medium (40%), and higher chance for Large fish (20%)
+                return random.nextInt(10) < 4 ? EnemyFish.FishType.SMALL :
                         (random.nextInt(10) < 8 ? EnemyFish.FishType.MEDIUM : EnemyFish.FishType.LARGE);
             } else {
-                return random.nextInt(10) < 3 ? EnemyFish.FishType.SMALL :
-                        (random.nextInt(10) < 7 ? EnemyFish.FishType.MEDIUM :
-                                (random.nextInt(10) < 9 ? EnemyFish.FishType.LARGE : EnemyFish.FishType.GIANT));
+                // Level 3 and higher: Low chance for Small fish (20%), Medium (30%), Large (30%), and very high chance for Giant (20%)
+                int chance = random.nextInt(10);
+                if (chance < 2) {
+                    return EnemyFish.FishType.SMALL;  // 20% chance for Small
+                } else if (chance < 5) {
+                    return EnemyFish.FishType.MEDIUM; // 30% chance for Medium
+                } else if (chance < 8) {
+                    return EnemyFish.FishType.LARGE;  // 30% chance for Large
+                } else {
+                    return EnemyFish.FishType.GIANT;  // 20% chance for Giant
+                }
             }
         } else {
+            // Below level threshold: Default to Small fish
             return EnemyFish.FishType.SMALL;
         }
     }
+
 
     private void updateScoreLabel() {
         scoreLabel.setText("Score: " + score);
@@ -381,23 +425,23 @@ public class GameScene {
 
         // Move up
         if (moveUp) {
-            playerFish.setTranslateY(Math.max(PADDING, playerFish.getTranslateY() - 3));
+            playerFish.setTranslateY(Math.max(PADDING, playerFish.getTranslateY() - 2));
             playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());  // Update image position
         }
         // Move down
         if (moveDown) {
-            playerFish.setTranslateY(Math.min(565 - PADDING, playerFish.getTranslateY() + 3));
+            playerFish.setTranslateY(Math.min(565 - PADDING, playerFish.getTranslateY() + 2));
             playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());  // Update image position
         }
         // Move left
         if (moveLeft) {
-            playerFish.setTranslateX(Math.max(PADDING, playerFish.getTranslateX() - 3));
+            playerFish.setTranslateX(Math.max(PADDING, playerFish.getTranslateX() - 2));
             playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());  // Update image position
             playerFish.setLeftImage();  // Switch to the left-facing image
         }
         // Move right
         if (moveRight) {
-            playerFish.setTranslateX(Math.min(800 - PADDING, playerFish.getTranslateX() + 3));
+            playerFish.setTranslateX(Math.min(800 - PADDING, playerFish.getTranslateX() + 2));
             playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());  // Update image position
             playerFish.setRightImage();  // Switch to the right-facing image
         }
@@ -407,14 +451,27 @@ public class GameScene {
         paused = !paused;
 
         if (paused) {
+            // Pause the game logic and show the pause menu
             pauseMenu.showPauseMenu((Group) stage.getScene().getRoot());
+
+            // Pause the background music
+            bgmPlayer.pause();
         } else {
+            // Resume the game logic and hide the pause menu
             pauseMenu.hidePauseMenu((Group) stage.getScene().getRoot());
+
+            // Resume the background music
+            bgmPlayer.play();
         }
     }
 
+
     private void endGame() {
         gameOver = true;
+
+        // Play game-over sound
+        bgmPlayer.stop(); // Stop background music
+        gameOverSoundPlayer.play();
 
         // Get the logged-in user's ID
         int userId = MainMenu.getLoggedInUserId();
@@ -495,9 +552,21 @@ public class GameScene {
 
         // Spawn new enemy fish based on current level (if desired)
         spawnEnemyFish(root, determineFishTypeBasedOnLevel());  // This can be adjusted as needed
+
+        // Restart background music
+        bgmPlayer.stop();
+        bgmPlayer.play();
+
+        // Reset sound effects (if needed)
+        eatSoundPlayer.stop();  // Stop any playing eat sound
+        levelUpSoundPlayer.stop();  // Stop any level up sound
+        gameOverSoundPlayer.stop();  // Stop any game over sound
+
+        // You can reset the sounds if needed, or just ensure they are stopped and ready to play again.
+        eatSoundPlayer.seek(Duration.ZERO);  // Reset to the beginning of the sound (if necessary)
+        levelUpSoundPlayer.seek(Duration.ZERO);  // Reset to the beginning of the sound (if necessary)
+        gameOverSoundPlayer.seek(Duration.ZERO);  // Reset to the beginning of the sound (if necessary)
     }
-
-
 
     private void exitToMainMenu() {
         gameOverPanel.hideGameOverPanel((Group) stage.getScene().getRoot());

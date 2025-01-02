@@ -30,7 +30,7 @@ public abstract class Fish extends Circle {
             case SMALL -> 10;
             case MEDIUM -> 20;
             case LARGE -> 30;
-            case GIANT -> 40;
+            case GIANT -> 60;
         };
     }
 
@@ -49,8 +49,8 @@ public abstract class Fish extends Circle {
         return switch (type) {
             case SMALL -> 30.0;
             case MEDIUM -> 50.0;
-            case LARGE -> 70.0;
-            case GIANT -> 90.0;
+            case LARGE -> 60.0;
+            case GIANT -> 80.0;
         };
     }
 
@@ -75,7 +75,7 @@ public abstract class Fish extends Circle {
             return FishType.MEDIUM;
         } else if (getRadius() == 30) {
             return FishType.LARGE;
-        } else if (getRadius() == 40) {
+        } else if (getRadius() == 50) {
             return FishType.GIANT;
         }
         return FishType.SMALL;  // Default
