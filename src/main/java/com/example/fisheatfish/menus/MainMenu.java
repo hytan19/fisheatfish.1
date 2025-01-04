@@ -3,6 +3,7 @@ package com.example.fisheatfish.menus;
 import com.example.fisheatfish.game.GameScene;
 import com.example.fisheatfish.utils.DatabaseConnection;
 import com.example.fisheatfish.game.PlayerScore;
+import javafx.scene.control.ScrollPane;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -12,7 +13,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.control.Separator;
-import javafx.stage.Modality;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -152,7 +152,6 @@ public class MainMenu {
         stage.show();
     }
 
-
     private static void logout(Stage stage) {
         isLoggedIn = false;
         loggedInUserId = -1;  // Reset the logged-in user ID
@@ -234,27 +233,27 @@ public class MainMenu {
     }
 
     private static void displayLeaderboard(Stage stage) {
-        // Fetch leaderboard data
+        // Fetch leaderboard data from the database
         List<PlayerScore.LeaderboardEntry> leaderboard = DatabaseConnection.getLeaderboard();
 
-        // Create a new stage for the leaderboard
-        Stage leaderboardStage = new Stage();
-        leaderboardStage.setTitle("Leaderboard");
+        // Clear the existing content of the main menu
+        VBox mainMenuLayout = (VBox) stage.getScene().getRoot();  // Assuming the root is a VBox for the main menu
+        mainMenuLayout.getChildren().clear();
 
-        // VBox layout to display the leaderboard
-        VBox layout = new VBox(10); // 10 px spacing between elements
-        layout.setPadding(new Insets(20));
-        layout.setAlignment(Pos.CENTER);
-        layout.setStyle("-fx-background-color: #f0f8ff;"); // Light blue background
-
-        // Title label
+        // Title label for the leaderboard
         Label title = new Label("Leaderboard");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        title.setTextFill(Color.DARKBLUE);
+        title.setTextFill(Color.DARKGREEN);
+        title.setAlignment(Pos.CENTER_LEFT);  // Left-align the title
 
-        // Add table-like headers
+        // Use HBox to hold the title and left-align it
+        HBox titleBox = new HBox(title);
+        titleBox.setAlignment(Pos.CENTER_LEFT);  // Left-align the title box
+        titleBox.setPadding(new Insets(20, 0, 10, 20)); // Padding to make sure it's not too close to the edge
+
+        // Add table-like headers for the leaderboard
         HBox header = new HBox(20);
-        header.setAlignment(Pos.CENTER_LEFT);
+        header.setAlignment(Pos.CENTER_LEFT);  // Left-align the header
         header.setPadding(new Insets(5, 0, 10, 0));
         Label rankHeader = new Label("Rank");
         Label usernameHeader = new Label("Username");
@@ -270,12 +269,12 @@ public class MainMenu {
 
         header.getChildren().addAll(rankHeader, usernameHeader, scoreHeader);
 
-        // Add leaderboard entries
+        // Add leaderboard entries in a VBox
         VBox entriesBox = new VBox(5);
         int rank = 1;
         for (PlayerScore.LeaderboardEntry entry : leaderboard) {
             HBox entryRow = new HBox(20);
-            entryRow.setAlignment(Pos.CENTER_LEFT);
+            entryRow.setAlignment(Pos.CENTER_LEFT);  // Left-align each row
 
             Label rankLabel = new Label(String.valueOf(rank++));
             Label usernameLabel = new Label(entry.getUsername());
@@ -293,24 +292,34 @@ public class MainMenu {
             entriesBox.getChildren().add(entryRow);
         }
 
+        // Scrollable list of leaderboard entries
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(entriesBox);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);  // Allow scrolling if the content exceeds the screen height
+        scrollPane.setPrefHeight(300);  // Adjust height based on the number of entries
+        scrollPane.setMaxWidth(350);  // Narrower width for the leaderboard box
+        scrollPane.setStyle("-fx-background-color: #f4f4f9;");
+
         // Back button to return to the main menu
         Button backButton = new Button("Back to Menu");
         backButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         backButton.setTextFill(Color.WHITE);
-        backButton.setStyle("-fx-background-color: #007acc;"); // Blue button
-        backButton.setOnAction(e -> leaderboardStage.close());
+        backButton.setStyle("-fx-background-color: #007acc;");  // Blue button
+        backButton.setOnAction(e -> show(stage));
 
-        // Combine all elements
-        layout.getChildren().addAll(title, header, new Separator(), entriesBox, backButton);
+        // Create a VBox for the leaderboard layout
+        VBox leaderboardLayout = new VBox(10);
+        leaderboardLayout.setPadding(new Insets(10));
+        leaderboardLayout.setAlignment(Pos.TOP_LEFT);  // Align the whole VBox to the left
+        leaderboardLayout.setStyle("-fx-background-color: #f4f4f9; -fx-border-radius: 10;");
 
-        // Set scene and show the stage
-        Scene scene = new Scene(layout, 400, 600);
-        leaderboardStage.setScene(scene);
-        leaderboardStage.initModality(Modality.APPLICATION_MODAL); // Blocks input to other windows
-        leaderboardStage.showAndWait();
+        // Set a specific width to the layout to make it narrower
+        leaderboardLayout.setPrefWidth(400);  // Set the preferred width of the leaderboard box to make it narrower
+        leaderboardLayout.getChildren().addAll(titleBox, header, new Separator(), scrollPane, backButton);
+
+        // Set the layout for the leaderboard view
+        mainMenuLayout.getChildren().addAll(leaderboardLayout);
     }
-
-
 }
 
 

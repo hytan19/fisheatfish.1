@@ -123,8 +123,8 @@ public class GameScene {
 
         // Initialize player fish
         playerFish = new PlayerFish();
-        playerFish.setTranslateX(300); // Set the initial position for the player fish
-        playerFish.setTranslateY(200);
+        playerFish.setTranslateX(400); // Set the initial position for the player fish
+        playerFish.setTranslateY(300);
 
         // Add the player's fish image to the root of the scene
         root.getChildren().add(playerFish.getFishImageView());
@@ -218,26 +218,35 @@ public class GameScene {
                 enemyFish.getFishImageView().setY(enemyFish.getTranslateY() - enemyFish.getRadius());
             }
 
+            // Flag to track if the sound has already been played for this collision
+            boolean soundPlayed = false;
+
             // Check collision with the player fish
             if (checkCollision(playerFish, enemyFish)) {
                 if (playerFish.getRadius() >= enemyFish.getRadius()) {
                     // Player eats the enemy fish
+                    if (!soundPlayed) {  // Ensure sound plays only once per collision
+                        // Stop and reset the eating sound before playing it
+                        eatSoundPlayer.stop();
+                        eatSoundPlayer.seek(Duration.ZERO);  // Reset to start
+                        eatSoundPlayer.play();  // Play the sound again
+                        soundPlayed = true;  // Mark sound as played
+                    }
+
                     score += enemyFish.getPointValue();
                     playerFish.incrementFishEaten();  // Track the number of fish eaten
                     updateScoreLabel();
-                    // Reset and play eating sound every time the player eats an enemy fish
-                    eatSoundPlayer.stop();  // Stop the sound if it's still playing
-                    eatSoundPlayer.play();  // Play the sound again
+
                     toRemove.add(enemyFish);  // Mark the enemy fish for removal
                 } else {
                     // End the game if the player collides with a larger enemy fish
-                    // Play game over sound when the player loses
                     gameOverSoundPlayer.stop();  // Stop the sound if it's still playing
                     gameOverSoundPlayer.play();  // Play the sound again
                     endGame();
                     return;
                 }
             }
+
         }
 
         // Remove enemy fish that have been eaten or are out of bounds
@@ -407,13 +416,16 @@ public class GameScene {
         }
     }
 
-
     private void updateScoreLabel() {
         scoreLabel.setText("Score: " + score);
     }
 
     private void updateLevelLabel() {
         levelLabel.setText("Level: " + currentLevel);
+    }
+
+    private void updateHighScoreLabel() {
+        highScoreLabel.setText("High Score: " + highScore);
     }
 
     // Handles key press events
@@ -508,6 +520,7 @@ public class GameScene {
 
         // Play game-over sound
         bgmPlayer.stop(); // Stop background music
+        gameOverSoundPlayer.stop();
         gameOverSoundPlayer.play();
 
         // Get the logged-in user's ID
@@ -547,68 +560,77 @@ public class GameScene {
         );
     }
 
-
-
     private void restartGame() {
+        // Stop the game over sound if it's still playing
+        gameOverSoundPlayer.stop();
+        eatSoundPlayer.stop();
+
         // Reset game variables
         score = 0;
         currentLevel = 1;
         fishEaten = 0;
+        playerFish.resetFishEaten(); // Reset the fish eaten count
         gameOver = false;
         paused = false;
         enemySpawnTimer = 0;
 
-        // Get the logged-in user's ID (same as in endGame)
-        int userId = MainMenu.getLoggedInUserId();
+        // Debug: Confirm reset
+        System.out.println("Game reset: Score = " + score + ", Level = " + currentLevel + ", Fish Eaten = " + fishEaten);
 
-        // Fetch the last score and level from the database
-        int lastScore = DatabaseConnection.getLastScore(userId);  // Get last saved score from DB
-        int lastLevel = DatabaseConnection.getLastLevel(userId);  // Get last saved level from DB
-
-        // Reset UI labels and display them
-        updateScoreLabel();
-        updateLevelLabel();
+        // Update UI labels with the reset values
+        updateScoreLabel();  // Update the score label
+        updateLevelLabel();  // Update the level label
+        updateHighScoreLabel();  // Update the high score label (assuming you have this method)
 
         // Clear existing enemy fish
         Group root = (Group) stage.getScene().getRoot();
-
-        // Remove the enemy fish images from the scene
         for (EnemyFish enemyFish : enemyFishList) {
-            root.getChildren().remove(enemyFish.getFishImageView());  // Remove the ImageView from the scene
+            root.getChildren().remove(enemyFish.getFishImageView());  // Remove enemy fish from scene
         }
-        enemyFishList.clear();  // Clear the list of enemy fish
+        enemyFishList.clear();
 
-        // Reset player fish position and size based on the last level
-        playerFish.setTranslateX(300);  // You can adjust this if needed
-        playerFish.setTranslateY(200);  // You can adjust this if needed
-        playerFish.setRadius(10);  // Reset radius to the initial size
+        // Reset player fish position and radius
+        playerFish.setTranslateX(400);
+        playerFish.setTranslateY(300);
+        playerFish.setRadius(10);  // Ensure this matches your initial game settings
 
-        // Add the background again (after clearing the screen)
+        // Reset the associated ImageView position and size
+        playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());
+        playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());
+        playerFish.getFishImageView().setFitWidth(playerFish.getRadius() * 2);
+        playerFish.getFishImageView().setFitHeight(playerFish.getRadius() * 2);
+
+        // Clear the root node and re-add the background and player fish
+        root.getChildren().clear();  // Clear any existing elements from the root node
         addBackground(root);  // Reapply the background
+        root.getChildren().add(playerFish.getFishImageView());  // Add player fish to the scene
+
+        // Add the labels back to the root
+        root.getChildren().add(scoreLabel);  // Add score label to root
+        root.getChildren().add(levelLabel);  // Add level label to root
+        root.getChildren().add(highScoreLabel);  // Add high score label to root
 
         // Restart the game loop
         gameLoop.play();
 
-        // Hide the Game Over panel if it's visible
+        // Hide the Game Over panel (if it's visible)
         gameOverPanel.hideGameOverPanel(root);
 
-        // Spawn new enemy fish based on current level (if desired)
-        spawnEnemyFish(root, determineFishTypeBasedOnLevel());  // This can be adjusted as needed
+        // Spawn new enemy fish
+        spawnEnemyFish(root, determineFishTypeBasedOnLevel());
 
         // Restart background music
         bgmPlayer.stop();
         bgmPlayer.play();
 
-        // Reset sound effects (if needed)
-        eatSoundPlayer.stop();  // Stop any playing eat sound
-        levelUpSoundPlayer.stop();  // Stop any level up sound
-        gameOverSoundPlayer.stop();  // Stop any game over sound
+        // Reset sound effects
+        eatSoundPlayer.seek(Duration.ZERO);
+        levelUpSoundPlayer.seek(Duration.ZERO);
+        gameOverSoundPlayer.seek(Duration.ZERO);
 
-        // You can reset the sounds if needed, or just ensure they are stopped and ready to play again.
-        eatSoundPlayer.seek(Duration.ZERO);  // Reset to the beginning of the sound (if necessary)
-        levelUpSoundPlayer.seek(Duration.ZERO);  // Reset to the beginning of the sound (if necessary)
-        gameOverSoundPlayer.seek(Duration.ZERO);  // Reset to the beginning of the sound (if necessary)
+        System.out.println("Game restarted.");
     }
+
 
     private void exitToMainMenu() {
         gameOverPanel.hideGameOverPanel((Group) stage.getScene().getRoot());

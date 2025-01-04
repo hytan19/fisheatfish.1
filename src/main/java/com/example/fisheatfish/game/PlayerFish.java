@@ -73,6 +73,11 @@ public class PlayerFish extends Fish {
         return fishEaten;
     }
 
+    // Reset the number of fish eaten
+    public void resetFishEaten() {
+        fishEaten = 0;
+    }
+
     // Override the abstract move method (this is already handled by player controls)
     @Override
     public void move(double padding) {
@@ -95,6 +100,7 @@ public class PlayerFish extends Fish {
         fishImageView.setImage(fishImageRight);
     }
 }
+
 
 
 
