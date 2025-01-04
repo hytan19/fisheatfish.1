@@ -16,6 +16,7 @@ import com.example.fisheatfish.menus.PauseMenu;
 import com.example.fisheatfish.menus.GameOverPanel;
 import com.example.fisheatfish.menus.MainMenu;
 import com.example.fisheatfish.utils.DatabaseConnection;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -36,6 +37,9 @@ public class GameScene {
     private int fishEaten = 0;
     private Label scoreLabel;
     private Label levelLabel;
+    private Label highScoreLabel;;
+    int userId = MainMenu.getLoggedInUserId();
+    private int highScore = DatabaseConnection.getHighScore(userId);;
 
     private static final double MIN_DISTANCE_BETWEEN_FISH = 50;
     private static final double PADDING = 20;
@@ -74,6 +78,12 @@ public class GameScene {
         levelUpSoundPlayer = createMediaPlayer("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\sound\\levelup.mp3");
         gameOverSoundPlayer = createMediaPlayer("C:\\Users\\User\\IdeaProjects\\fisheatfish\\fisheatfish\\src\\main\\resources\\sound\\collision.mp3");
     }
+
+    private void playLevelUpSound() {
+        levelUpSoundPlayer.stop();
+        levelUpSoundPlayer.play();
+    }
+
 
     private MediaPlayer createMediaPlayer(String filePath) {
         Media media = new Media(new File(filePath).toURI().toString());
@@ -137,6 +147,14 @@ public class GameScene {
         levelLabel.setTranslateX(10);
         levelLabel.setTranslateY(40);
         root.getChildren().add(levelLabel);
+
+        // Initialize high score label
+        highScoreLabel = new Label("High Score: " + highScore);
+        highScoreLabel.setFont(new Font("Arial", 20));
+        highScoreLabel.setTextFill(Color.BLACK);
+        highScoreLabel.setTranslateX(10);
+        highScoreLabel.setTranslateY(70);
+        root.getChildren().add(highScoreLabel);
 
         // Set up the scene
         Scene gameScene = new Scene(root, 800, 565, Color.CYAN);
@@ -230,10 +248,16 @@ public class GameScene {
 
         // Handle level progression based on score
         if (score >= 50 && currentLevel == 1) {
+            playLevelUpSound();
+            System.out.println("Triggering level-up sound for Level: " + currentLevel);
             progressToNextLevel(root, 2);
         } else if (score >= 100 && currentLevel == 2) {
+            playLevelUpSound();
+            System.out.println("Triggering level-up sound for Level: " + currentLevel);
             progressToNextLevel(root, 3);
         } else if (score >= 150 && currentLevel == 3) {
+            playLevelUpSound();
+            System.out.println("Triggering level-up sound for Level: " + currentLevel);
             progressToNextLevel(root, 4);
         }
 
@@ -272,10 +296,6 @@ public class GameScene {
         } else if (level == 3) {
             levelMidpointScore = 125;
         }
-
-        // Play level-up sound
-        levelUpSoundPlayer.stop();
-        levelUpSoundPlayer.play();
     }
 
     private double getPlayerFishSize(int level) {
@@ -419,31 +439,49 @@ public class GameScene {
         }
     }
 
-    // Update the player's position based on key states
     private void updatePlayerMovement(double deltaTime) {
-        double speed = 50; // Pixels per second
+        double speed = 100; // Pixels per second
+        boolean positionChanged = false;
 
         // Move up
         if (moveUp) {
-            playerFish.setTranslateY(Math.max(PADDING, playerFish.getTranslateY() - 2));
-            playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());  // Update image position
+            double newY = Math.max(PADDING, playerFish.getTranslateY() - speed * deltaTime);
+            if (newY != playerFish.getTranslateY()) {
+                playerFish.setTranslateY(newY);
+                positionChanged = true;
+            }
         }
         // Move down
         if (moveDown) {
-            playerFish.setTranslateY(Math.min(565 - PADDING, playerFish.getTranslateY() + 2));
-            playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());  // Update image position
+            double newY = Math.min(565 - PADDING, playerFish.getTranslateY() + speed * deltaTime);
+            if (newY != playerFish.getTranslateY()) {
+                playerFish.setTranslateY(newY);
+                positionChanged = true;
+            }
         }
         // Move left
         if (moveLeft) {
-            playerFish.setTranslateX(Math.max(PADDING, playerFish.getTranslateX() - 2));
-            playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());  // Update image position
-            playerFish.setLeftImage();  // Switch to the left-facing image
+            double newX = Math.max(PADDING, playerFish.getTranslateX() - speed * deltaTime);
+            if (newX != playerFish.getTranslateX()) {
+                playerFish.setTranslateX(newX);
+                playerFish.setLeftImage();  // Switch to the left-facing image
+                positionChanged = true;
+            }
         }
         // Move right
         if (moveRight) {
-            playerFish.setTranslateX(Math.min(800 - PADDING, playerFish.getTranslateX() + 2));
-            playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());  // Update image position
-            playerFish.setRightImage();  // Switch to the right-facing image
+            double newX = Math.min(800 - PADDING, playerFish.getTranslateX() + speed * deltaTime);
+            if (newX != playerFish.getTranslateX()) {
+                playerFish.setTranslateX(newX);
+                playerFish.setRightImage();  // Switch to the right-facing image
+                positionChanged = true;
+            }
+        }
+
+        // Update the ImageView position only if the position has changed
+        if (positionChanged) {
+            playerFish.getFishImageView().setX(playerFish.getTranslateX() - playerFish.getRadius());
+            playerFish.getFishImageView().setY(playerFish.getTranslateY() - playerFish.getRadius());
         }
     }
 
@@ -465,7 +503,6 @@ public class GameScene {
         }
     }
 
-
     private void endGame() {
         gameOver = true;
 
@@ -477,35 +514,40 @@ public class GameScene {
         int userId = MainMenu.getLoggedInUserId();
         int fishEaten = playerFish.getFishEaten(); // Replace with actual logic to get fish eaten by the player.
 
-        // Initialize the high score variable
-        int highScore = 0;
+        // Initialize the high score variables
+        int oldHighScore = 0;
+        int newHighScore = 0;
 
         if (userId != -1) {
             // Fetch the current high score for the user from the database
-            highScore = DatabaseConnection.getHighScore(userId);
+            oldHighScore = DatabaseConnection.getHighScore(userId);
 
             // If the current score exceeds the high score, save the new score
-            if (score > highScore) {
-                // Save the new score (this implicitly becomes the new high score)
-                DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);
-                highScore = score;  // Update highScore to the current score
+            if (score > oldHighScore) {
+                // Update the high score in the database
+                DatabaseConnection.updateHighScore(userId, score);  // This will save the new high score
+                newHighScore = score;  // Set new high score
             } else {
-                // Save the score without marking it as a new high score
+                // If no new high score, save the score anyway
                 DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);
+                newHighScore = oldHighScore;  // The old high score remains
             }
         }
 
-        // Show the Game Over panel with the current score, level, and high score
+        // Show the Game Over panel with the current score, level, and high score comparison
         gameOverPanel.showGameOverPanel(
                 (Group) stage.getScene().getRoot(),  // Root node of the scene
                 score,                              // Current score
                 currentLevel,                       // Current level
-                highScore,                          // High score for the user
+                oldHighScore,                       // Old high score for the user
+                newHighScore,                       // New high score after comparison
                 MainMenu.getLoggedInUserId(),       // User ID
                 this::restartGame,                  // Restart method (Runnable)
                 this::exitToMainMenu                // Exit to Main Menu method (Runnable)
         );
     }
+
+
 
     private void restartGame() {
         // Reset game variables

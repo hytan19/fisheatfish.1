@@ -4,11 +4,15 @@ import com.example.fisheatfish.game.GameScene;
 import com.example.fisheatfish.utils.DatabaseConnection;
 import com.example.fisheatfish.game.PlayerScore;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javafx.scene.control.Separator;
+import javafx.stage.Modality;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -41,8 +45,7 @@ public class MainMenu {
         gameHistoryButton.setOnAction(e -> showGameHistory(stage));
 
         Button leaderboardButton = new Button("Leaderboard");
-        //leaderboardButton.setOnAction(e -> new LeaderboardMenu().show(stage));
-
+        leaderboardButton.setOnAction(e -> displayLeaderboard(stage));
 
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> logout(stage));
@@ -229,6 +232,85 @@ public class MainMenu {
         }
         return null;
     }
+
+    private static void displayLeaderboard(Stage stage) {
+        // Fetch leaderboard data
+        List<PlayerScore.LeaderboardEntry> leaderboard = DatabaseConnection.getLeaderboard();
+
+        // Create a new stage for the leaderboard
+        Stage leaderboardStage = new Stage();
+        leaderboardStage.setTitle("Leaderboard");
+
+        // VBox layout to display the leaderboard
+        VBox layout = new VBox(10); // 10 px spacing between elements
+        layout.setPadding(new Insets(20));
+        layout.setAlignment(Pos.CENTER);
+        layout.setStyle("-fx-background-color: #f0f8ff;"); // Light blue background
+
+        // Title label
+        Label title = new Label("Leaderboard");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        title.setTextFill(Color.DARKBLUE);
+
+        // Add table-like headers
+        HBox header = new HBox(20);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(5, 0, 10, 0));
+        Label rankHeader = new Label("Rank");
+        Label usernameHeader = new Label("Username");
+        Label scoreHeader = new Label("Score");
+
+        rankHeader.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        usernameHeader.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        scoreHeader.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+
+        rankHeader.setMinWidth(50);
+        usernameHeader.setMinWidth(150);
+        scoreHeader.setMinWidth(100);
+
+        header.getChildren().addAll(rankHeader, usernameHeader, scoreHeader);
+
+        // Add leaderboard entries
+        VBox entriesBox = new VBox(5);
+        int rank = 1;
+        for (PlayerScore.LeaderboardEntry entry : leaderboard) {
+            HBox entryRow = new HBox(20);
+            entryRow.setAlignment(Pos.CENTER_LEFT);
+
+            Label rankLabel = new Label(String.valueOf(rank++));
+            Label usernameLabel = new Label(entry.getUsername());
+            Label scoreLabel = new Label(String.valueOf(entry.getScore()));
+
+            rankLabel.setFont(Font.font("Arial", 14));
+            usernameLabel.setFont(Font.font("Arial", 14));
+            scoreLabel.setFont(Font.font("Arial", 14));
+
+            rankLabel.setMinWidth(50);
+            usernameLabel.setMinWidth(150);
+            scoreLabel.setMinWidth(100);
+
+            entryRow.getChildren().addAll(rankLabel, usernameLabel, scoreLabel);
+            entriesBox.getChildren().add(entryRow);
+        }
+
+        // Back button to return to the main menu
+        Button backButton = new Button("Back to Menu");
+        backButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        backButton.setTextFill(Color.WHITE);
+        backButton.setStyle("-fx-background-color: #007acc;"); // Blue button
+        backButton.setOnAction(e -> leaderboardStage.close());
+
+        // Combine all elements
+        layout.getChildren().addAll(title, header, new Separator(), entriesBox, backButton);
+
+        // Set scene and show the stage
+        Scene scene = new Scene(layout, 400, 600);
+        leaderboardStage.setScene(scene);
+        leaderboardStage.initModality(Modality.APPLICATION_MODAL); // Blocks input to other windows
+        leaderboardStage.showAndWait();
+    }
+
+
 }
 
 

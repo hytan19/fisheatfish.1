@@ -30,7 +30,7 @@ public abstract class Fish extends Circle {
             case SMALL -> 10;
             case MEDIUM -> 20;
             case LARGE -> 30;
-            case GIANT -> 60;
+            case GIANT -> 45;
         };
     }
 
@@ -50,7 +50,7 @@ public abstract class Fish extends Circle {
             case SMALL -> 30.0;
             case MEDIUM -> 50.0;
             case LARGE -> 60.0;
-            case GIANT -> 80.0;
+            case GIANT -> 70.0;
         };
     }
 

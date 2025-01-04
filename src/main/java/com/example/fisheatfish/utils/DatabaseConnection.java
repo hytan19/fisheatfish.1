@@ -66,27 +66,62 @@ public class DatabaseConnection {
 
     // Method to update the high score for a specific player by userId
     public static void updateHighScore(int userId, int newHighScore) {
-        // SQL query to update the high score for the player
-        String query = "UPDATE player_scores SET score = ? WHERE user_id = ? AND score < ?";
+        // SQL query to retrieve the current high score for the user
+        String getHighScoreQuery = "SELECT MAX(score) AS high_score FROM player_scores WHERE user_id = ?";
+        int currentHighScore = 0;
 
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
+             PreparedStatement stmt = connection.prepareStatement(getHighScoreQuery)) {
+            stmt.setInt(1, userId);  // Set the userId parameter
+            ResultSet resultSet = stmt.executeQuery();
 
-            // Set parameters: new high score, userId, and check if current score is lower than the new high score
-            statement.setInt(1, newHighScore);  // The new high score
-            statement.setInt(2, userId);        // User ID
-            statement.setInt(3, newHighScore);  // Only update if current score is less than the new high score
-
-            int rowsAffected = statement.executeUpdate();
-
-            if (rowsAffected > 0) {
-                System.out.println("High score updated successfully for userId: " + userId);
-            } else {
-                System.out.println("The new high score is not greater than the current score.");
+            if (resultSet.next()) {
+                currentHighScore = resultSet.getInt("high_score");  // Get the current high score for the user
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        // If the new high score is greater than the current high score, update the database
+        if (newHighScore > currentHighScore) {
+            String query = """
+        INSERT INTO player_scores (user_id, score)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE score = GREATEST(score, ?);
+        """;
+
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query)) {
+
+                // Set parameters: userId and new high score
+                statement.setInt(1, userId);      // User ID
+                statement.setInt(2, newHighScore); // The new high score
+                statement.setInt(3, newHighScore); // Ensure that score is updated only if the new score is higher
+
+                int rowsAffected = statement.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    System.out.println("High score updated successfully for userId: " + userId);
+                    // Display congrats message here when new high score is achieved
+                    displayCongratsMessage(newHighScore);
+                } else {
+                    System.out.println("The new high score is not greater than the current score.");
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("New score is not higher than the current high score.");
+        }
+    }
+
+    // Method to display the congratulatory message
+    public static void displayCongratsMessage(int newHighScore) {
+        // Assuming you have some GUI or label to display the message
+        // For example, using a JavaFX Label or a Pop-up
+        String message = "Congratulations! You've achieved a new high score of " + newHighScore + "!";
+        System.out.println(message);  // Just print to console for now
+
     }
 
 
@@ -170,7 +205,6 @@ public class DatabaseConnection {
         return 1; // Return level 1 if no level is found
     }
 
-
     public static List<PlayerScore> loadScores(int userId, int page, int entriesPerPage) {
         List<PlayerScore> scores = new ArrayList<>();
         String query = "SELECT score, level, fish_eaten, gameplay_count, date_played " +
@@ -203,6 +237,40 @@ public class DatabaseConnection {
             e.printStackTrace();
         }
         return scores;
+    }
+
+    public static List<PlayerScore.LeaderboardEntry> getLeaderboard() {
+        List<PlayerScore.LeaderboardEntry> leaderboard = new ArrayList<>();
+
+        // Updated SQL query to fetch all players' scores, ordered by highest score
+        String query = """
+    SELECT 
+        users.username, 
+        MAX(player_scores.score) AS highest_score
+    FROM 
+        player_scores
+    INNER JOIN 
+        users ON player_scores.user_id = users.id
+    GROUP BY 
+        users.username
+    ORDER BY 
+        highest_score DESC;
+    """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String username = rs.getString("username");
+                int score = rs.getInt("highest_score");
+                leaderboard.add(new PlayerScore.LeaderboardEntry(username, score));  // Add each player's highest score to the leaderboard
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return leaderboard;  // Return all leaderboard entries
     }
 }
 
