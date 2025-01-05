@@ -27,6 +27,11 @@ public class DatabaseConnection {
         String query = "INSERT INTO player_scores (user_id, score, level, fish_eaten, gameplay_count, date_played) " +
                 "VALUES (?, ?, ?, ?, ?, NOW())";
 
+        // Debugging: Ensure values are being passed correctly
+        System.out.println("Saving score for userId: " + userId);
+        System.out.println("Score: " + score + ", Level: " + level + ", Fish Eaten: " + fishEaten);
+        System.out.println("Gameplay Count: " + (getCurrentGameplayCount(userId) + 1));
+
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 
@@ -65,7 +70,7 @@ public class DatabaseConnection {
     }
 
     // Method to update the high score for a specific player by userId
-    public static void updateHighScore(int userId, int newHighScore) {
+    public static void updateHighScore(int userId, int newHighScore, int currentLevel, int fishEaten) {
         // SQL query to retrieve the current high score for the user
         String getHighScoreQuery = "SELECT MAX(score) AS high_score FROM player_scores WHERE user_id = ?";
         int currentHighScore = 0;
@@ -84,36 +89,38 @@ public class DatabaseConnection {
 
         // If the new high score is greater than the current high score, update the database
         if (newHighScore > currentHighScore) {
-            String query = """
-        INSERT INTO player_scores (user_id, score)
-        VALUES (?, ?)
-        ON DUPLICATE KEY UPDATE score = GREATEST(score, ?);
-        """;
+            // Update the high score in the users table
+            String updateHighScoreQuery = "UPDATE users SET high_score = ? WHERE id = ?";
 
             try (Connection connection = getConnection();
-                 PreparedStatement statement = connection.prepareStatement(query)) {
+                 PreparedStatement stmt = connection.prepareStatement(updateHighScoreQuery)) {
+                stmt.setInt(1, newHighScore);  // Set the new high score
+                stmt.setInt(2, userId);         // Set the userId
 
-                // Set parameters: userId and new high score
-                statement.setInt(1, userId);      // User ID
-                statement.setInt(2, newHighScore); // The new high score
-                statement.setInt(3, newHighScore); // Ensure that score is updated only if the new score is higher
-
-                int rowsAffected = statement.executeUpdate();
+                int rowsAffected = stmt.executeUpdate();
 
                 if (rowsAffected > 0) {
                     System.out.println("High score updated successfully for userId: " + userId);
                     // Display congrats message here when new high score is achieved
                     displayCongratsMessage(newHighScore);
                 } else {
-                    System.out.println("The new high score is not greater than the current score.");
+                    System.out.println("Failed to update high score for userId: " + userId);
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+
+            // Save the new game session score to the player_scores table
+            saveScore(userId, newHighScore, currentLevel, fishEaten);  // This saves the score, level, and fishEaten
+
         } else {
+            // If the new score is not higher than the current high score, just save the game session without updating the high score
+            saveScore(userId, newHighScore, currentLevel, fishEaten);
             System.out.println("New score is not higher than the current high score.");
         }
     }
+
+
 
     // Method to display the congratulatory message
     public static void displayCongratsMessage(int newHighScore) {

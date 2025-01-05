@@ -112,7 +112,8 @@ public class LoginMenu {
 
         try (Connection connection = DatabaseConnection.getConnection()) {
             if (connection != null) {
-                String query = "SELECT * FROM users WHERE username = ? AND password = ?";
+                // Use BINARY keyword for case-sensitive username comparison
+                String query = "SELECT * FROM users WHERE BINARY username = ? AND password = ?";
                 try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
                     preparedStatement.setString(1, username);
                     preparedStatement.setString(2, hashedPassword);  // Compare the hashed password

@@ -235,6 +235,7 @@ public class GameScene {
 
                     score += enemyFish.getPointValue();
                     playerFish.incrementFishEaten();  // Track the number of fish eaten
+                    System.out.println("Debug: Fish Eaten - Current Count = " + fishEaten);
                     updateScoreLabel();
 
                     toRemove.add(enemyFish);  // Mark the enemy fish for removal
@@ -527,6 +528,9 @@ public class GameScene {
         int userId = MainMenu.getLoggedInUserId();
         int fishEaten = playerFish.getFishEaten(); // Replace with actual logic to get fish eaten by the player.
 
+        System.out.println("EndGame Debug: userId=" + userId + ", fishEaten=" + fishEaten + ", currentLevel=" + currentLevel + ", score=" + score);
+
+
         // Initialize the high score variables
         int oldHighScore = 0;
         int newHighScore = 0;
@@ -538,11 +542,11 @@ public class GameScene {
             // If the current score exceeds the high score, save the new score
             if (score > oldHighScore) {
                 // Update the high score in the database
-                DatabaseConnection.updateHighScore(userId, score);  // This will save the new high score
+                DatabaseConnection.updateHighScore(userId, score, currentLevel, fishEaten);  // Pass currentLevel and fishEaten
                 newHighScore = score;  // Set new high score
             } else {
                 // If no new high score, save the score anyway
-                DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);
+                DatabaseConnection.saveScore(userId, score, currentLevel, fishEaten);  // Save score, level, fishEaten
                 newHighScore = oldHighScore;  // The old high score remains
             }
         }
@@ -630,7 +634,6 @@ public class GameScene {
 
         System.out.println("Game restarted.");
     }
-
 
     private void exitToMainMenu() {
         gameOverPanel.hideGameOverPanel((Group) stage.getScene().getRoot());
