@@ -16,6 +16,9 @@ import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
@@ -34,25 +37,46 @@ public class MainMenu {
             return;
         }
 
-        VBox vbox = new VBox(10);
+        // Create the VBox layout for the main menu
+        VBox vbox = new VBox(15);
         vbox.setPadding(new Insets(20));
 
-        // Start game button
+
+        // Set background styling similar to LoginMenu
+        vbox.setBackground(new Background(new BackgroundFill(Color.LIGHTSKYBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+
+        // Title for the Main Menu
+        Label titleLabel = new Label("Main Menu");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.setTextFill(Color.DARKBLUE);
+        titleLabel.setStyle("-fx-padding: 10px 0px 20px 0px;");
+
+        // Create buttons with consistent styling
         Button startGameButton = new Button("Start Game");
+        startGameButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        startGameButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-padding: 10; -fx-background-radius: 15;");
         startGameButton.setOnAction(e -> startGame(stage));
 
         Button gameHistoryButton = new Button("Game History");
+        gameHistoryButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        gameHistoryButton.setStyle("-fx-background-color: #008CBA; -fx-text-fill: white; -fx-padding: 10; -fx-background-radius: 15;");
         gameHistoryButton.setOnAction(e -> showGameHistory(stage));
 
         Button leaderboardButton = new Button("Leaderboard");
+        leaderboardButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        leaderboardButton.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white; -fx-padding: 10; -fx-background-radius: 15;");
         leaderboardButton.setOnAction(e -> displayLeaderboard(stage));
 
         Button logoutButton = new Button("Logout");
+        logoutButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        logoutButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-padding: 10; -fx-background-radius: 15;");
         logoutButton.setOnAction(e -> logout(stage));
 
-        vbox.getChildren().addAll(startGameButton, gameHistoryButton, leaderboardButton, logoutButton);
+        // Add title label and buttons to the VBox layout
+        vbox.getChildren().addAll(titleLabel, startGameButton, gameHistoryButton, leaderboardButton, logoutButton);
 
-        Scene scene = new Scene(vbox, 300, 250);
+        // Create and display the scene with appropriate size
+        Scene scene = new Scene(vbox, 350, 400);  // Adjusted size for better spacing
         stage.setScene(scene);
         stage.setTitle("Main Menu");
         stage.show();

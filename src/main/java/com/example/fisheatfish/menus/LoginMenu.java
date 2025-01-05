@@ -17,6 +17,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.control.Label;
+import javafx.application.Platform;
 
 import com.example.fisheatfish.utils.DatabaseConnection;
 import com.example.fisheatfish.utils.PasswordHasher;
@@ -31,8 +32,8 @@ public class LoginMenu {
     public void show(Stage stage) {
         // Create the VBox layout for the login screen
         VBox vbox = new VBox(15);
-        vbox.setPadding(new Insets(30));
-        vbox.setAlignment(Pos.CENTER);
+        vbox.setPadding(new Insets(20));
+
 
         // Background styling
         vbox.setBackground(new Background(new BackgroundFill(Color.LIGHTSKYBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
@@ -46,11 +47,13 @@ public class LoginMenu {
         // Create the username and password fields with placeholder text and set a maximum width
         TextField usernameField = new TextField();
         usernameField.setPromptText("Username");
-        usernameField.setStyle("-fx-background-radius: 15; -fx-padding: 10; -fx-max-width: 250px;");
+        usernameField.setStyle("-fx-background-radius: 15; -fx-padding: 10;");
+        usernameField.setMaxWidth(250);  // Set preferred width for consistency
 
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Password");
-        passwordField.setStyle("-fx-background-radius: 15; -fx-padding: 10; -fx-max-width: 250px;");
+        passwordField.setStyle("-fx-background-radius: 15; -fx-padding: 10;");
+        passwordField.setMaxWidth(250);  // Set preferred width for consistency
 
         // Create the buttons with some styling
         Button loginButton = new Button("Login");
@@ -71,11 +74,31 @@ public class LoginMenu {
         // Add all components to the VBox
         vbox.getChildren().addAll(titleLabel, usernameField, passwordField, loginButton, signUpButton, exitGameButton);
 
+        // Force layout computation to ensure bounds are available
+        vbox.layout();
+
+        // Debugging: Print the bounds of VBox and its children
+        System.out.println("Forced Layout - VBox Bounds: " + vbox.getBoundsInParent());
+        for (javafx.scene.Node child : vbox.getChildren()) {
+            System.out.println("Forced Layout - Child Bounds: " + child.getClass().getSimpleName() + " -> " + child.getBoundsInParent());
+        }
+
         // Create and display the scene
         Scene scene = new Scene(vbox, 350, 350);  // Adjusted size for better layout
         stage.setScene(scene);
         stage.setTitle("Login");
         stage.show();
+
+        // Debugging: Delayed bounds check to confirm rendering is complete
+        Platform.runLater(() -> {
+            System.out.println("Post-Rendering - VBox Bounds: " + vbox.getBoundsInParent());
+            for (javafx.scene.Node child : vbox.getChildren()) {
+                System.out.println("Post-Rendering - Child Bounds: " + child.getClass().getSimpleName() + " -> " + child.getBoundsInParent());
+            }
+        });
+
+        // Optionally, request layout pass to update layout
+        vbox.requestLayout();
     }
 
     private void login(Stage stage, String username, String password) {
@@ -130,6 +153,8 @@ public class LoginMenu {
         alert.showAndWait();
     }
 }
+
+
 
 
 
